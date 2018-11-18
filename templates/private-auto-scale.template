@@ -1,0 +1,785 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This template creates AutoScale group with load balancer for private subnet group",
+    "Parameters": {
+        "Subnet1": {
+            "Description": "Please enter subnetID for first subnet group",
+            "Type": "String",
+            "Default": ""
+        },
+        "Subnet2": {
+            "Description": "Please enter subnetID for second subnet group",
+            "Type": "String",
+            "Default": ""
+        },
+        "VPC": {
+            "Description": "Please enter VPCID.",
+            "Type": "AWS::EC2::VPC::Id",
+            "Default": ""
+        },
+        "UserDataString": {
+            "Description": "Please enter UserDataString.",
+            "Type": "String",
+            "Default": ""
+        },
+        "ImageIdString": {
+            "Description": "Please enter ImageIdString.",
+            "Type": "AWS::EC2::Image::Id",
+            "Default": ""
+        },
+        "LaunchName": {
+            "Description": "Please enter LaunchName.",
+            "Type": "String",
+            "Default": "regular"
+        },
+        "IsInternalLB": {
+            "AllowedValues": [
+                "true",
+                "false"
+            ],
+            "Default": "true",
+            "Description": "Set to false to create external/public loadbalncer.",
+            "Type": "String"
+        },
+        "HttpsCertificate": {
+            "Description": "Please enter certificate ARN for HTTPS connection",
+            "Type": "String",
+            "Default": ""
+        },
+        "NotificationTopic": {
+            "Description": "Please enter NotificationTopicID.",
+            "Type": "String",
+            "Default": ""
+        },
+        "KeyPairName": {
+            "Description": "Public/private key pairs allow you to securely connect to your NAT instance after it launches. This is used only if the region does not support NAT gateways.",
+            "Type": "AWS::EC2::KeyPair::KeyName"
+        },
+        "InstanceType": {
+            "Description": "Private WebServer EC2 instance type",
+            "Type": "String",
+            "Default": "t3.xlarge",
+            "AllowedValues": [
+                "t3.xlarge",
+                "t2.nano",
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "t2.large",
+                "m1.small",
+                "m1.medium",
+                "m1.large",
+                "m1.xlarge",
+                "m2.xlarge",
+                "m2.2xlarge",
+                "m2.4xlarge",
+                "m3.medium",
+                "m3.large",
+                "m3.xlarge",
+                "m3.2xlarge",
+                "m4.large",
+                "m4.xlarge",
+                "m4.2xlarge",
+                "m4.4xlarge",
+                "m4.10xlarge",
+                "c1.medium",
+                "c1.xlarge",
+                "c3.large",
+                "c3.xlarge",
+                "c3.2xlarge",
+                "c3.4xlarge",
+                "c3.8xlarge",
+                "c4.large",
+                "c4.xlarge",
+                "c4.2xlarge",
+                "c4.4xlarge",
+                "c4.8xlarge",
+                "g2.2xlarge",
+                "g2.8xlarge",
+                "r3.large",
+                "r3.xlarge",
+                "r3.2xlarge",
+                "r3.4xlarge",
+                "r3.8xlarge",
+                "i2.xlarge",
+                "i2.2xlarge",
+                "i2.4xlarge",
+                "i2.8xlarge",
+                "d2.xlarge",
+                "d2.2xlarge",
+                "d2.4xlarge",
+                "d2.8xlarge",
+                "hi1.4xlarge",
+                "hs1.8xlarge",
+                "cr1.8xlarge",
+                "cc2.8xlarge",
+                "cg1.4xlarge"
+            ],
+            "ConstraintDescription": "must be a valid EC2 instance type."
+        }
+    },
+    "Metadata": {
+        "AWS::CloudFormation::Interface": {
+            "ParameterGroups": [
+                {
+                    "Label": {
+                        "default": "Network Configuration"
+                    },
+                    "Parameters": [
+                        "VPC",
+                        "Subnet1",
+                        "Subnet2",
+                        "NotificationTopic"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "Amazon EC2 Configuration"
+                    },
+                    "Parameters": [
+                        "KeyPairName",
+                        "InstanceType",
+                        "UserDataString",
+                        "ImageIdString",
+                        "LaunchName",
+                        "IsInternalLB",
+                        "HttpsCertificate"
+                    ]
+                }
+            ],
+            "ParameterLabels": {
+                "VPC": {
+                    "default": "VPC"
+                },
+                "Subnet1": {
+                    "default": "Subnet1"
+                },
+                "Subnet2": {
+                    "default": "Subnet2"
+                },
+                "NotificationTopic": {
+                    "default": "NotificationTopic"
+                },
+                "KeyPairName": {
+                    "default": "Key pair name"
+                },
+                "InstanceType": {
+                    "default": "InstanceType"
+                },
+                "UserDataString": {
+                    "default": "UserDataString"
+                },
+                "ImageIdString": {
+                    "default": "ImageIdString"
+                },
+                "LaunchName": {
+                    "default": "LaunchName"
+                },
+                "IsInternalLB": {
+                    "default": "IsInternalLB"
+                },
+                "HttpsCertificate": {
+                    "default": "HttpsCertificate"
+                }
+            }
+        },
+        "AWS::CloudFormation::Designer": {
+            "943e7f1a-33b9-48d7-a936-d7350723f469": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 60,
+                    "y": 90
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "a5090fbf-8040-48a3-8668-25470a9b45e1": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 180,
+                    "y": 90
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "6e0267a6-d681-4948-afc4-45d164f5936e": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 450,
+                    "y": 320
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "d2578730-cafc-4f49-a523-fedbd2949fbe": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 180,
+                    "y": 210
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "6e0267a6-d681-4948-afc4-45d164f5936e"
+                ]
+            },
+            "51da21f3-fb26-4830-baa5-085d66cda74e": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 300,
+                    "y": 90
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "943e7f1a-33b9-48d7-a936-d7350723f469"
+                ]
+            },
+            "2fe7889e-8df7-4e60-8231-dd3610c97420": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 300,
+                    "y": 210
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "51da21f3-fb26-4830-baa5-085d66cda74e",
+                    "a5090fbf-8040-48a3-8668-25470a9b45e1"
+                ]
+            },
+            "cf0f3bb3-651b-4893-b99a-575f1c908ecf": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 60,
+                    "y": 330
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "2fe7889e-8df7-4e60-8231-dd3610c97420"
+                ]
+            },
+            "11720938-6122-4a95-acaa-6cd5ff0580f4": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 180,
+                    "y": 330
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "db0b179a-829c-4134-a765-7deeeac98e82": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 300,
+                    "y": 330
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "2fe7889e-8df7-4e60-8231-dd3610c97420"
+                ]
+            },
+            "3a5d1b4c-c842-4424-a3c7-37e096c39cf3": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 420,
+                    "y": 90
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "83e2790a-f58c-4790-8f55-0034738d94ac": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 570,
+                    "y": 210
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "6e0267a6-d681-4948-afc4-45d164f5936e"
+                ]
+            },
+            "3bbf1d98-57cb-418c-806b-d3bb57df0717": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 590,
+                    "y": 330
+                },
+                "z": 1,
+                "embeds": []
+            }
+        }
+    },
+    "Conditions": {
+        "CreateHTTPSListenerWithCertificateCondition": {
+            "Fn::Equals": [
+                {
+                    "Ref": "IsInternalLB"
+                },
+                "false"
+            ]
+        }
+    },
+    "Resources": {
+        "WebServerGroup": {
+            "Type": "AWS::AutoScaling::AutoScalingGroup",
+            "Properties": {
+                "VPCZoneIdentifier": [
+                    {
+                        "Ref": "Subnet1"
+                    },
+                    {
+                        "Ref": "Subnet2"
+                    }
+                ],
+                "LaunchConfigurationName": {
+                    "Ref": "LaunchConfig"
+                },
+                "MinSize": "1",
+                "MaxSize": "3",
+                "TargetGroupARNs": [
+                    {
+                        "Ref": "ALBTargetGroup"
+                    }
+                ],
+                "NotificationConfigurations": [{
+                    "TopicARN": {
+                        "Ref": "NotificationTopic"
+                    },
+                    "NotificationTypes": [
+                        "autoscaling:EC2_INSTANCE_LAUNCH",
+                        "autoscaling:EC2_INSTANCE_LAUNCH_ERROR",
+                        "autoscaling:EC2_INSTANCE_TERMINATE",
+                        "autoscaling:EC2_INSTANCE_TERMINATE_ERROR"
+                    ]
+                }],
+				"Tags": [{
+						"Key": "Name",
+						"Value": {
+					"Fn::Sub": "${LaunchName}CallVUWebServer"
+				},
+						"PropagateAtLaunch": true
+					}
+				]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "2fe7889e-8df7-4e60-8231-dd3610c97420"
+                }
+            }
+        },
+        "LaunchConfig": {
+            "Type": "AWS::AutoScaling::LaunchConfiguration",
+            "Metadata": {
+                "Comment": "Install a simple application for  Web servers group",
+                "AWS::CloudFormation::Designer": {
+                    "id": "51da21f3-fb26-4830-baa5-085d66cda74e"
+                }
+            },
+            "Properties": {
+                "UserData": {
+				"Fn::Base64": {
+                    "Ref": "UserDataString"
+                }
+				},
+                "EbsOptimized": false,
+                "ImageId": {
+                    "Ref": "ImageIdString"
+                },
+                "BlockDeviceMappings": [],
+                "KeyName": {
+                    "Ref": "KeyPairName"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "InstanceSecurityGroup"
+                    }
+                ],
+                "LaunchConfigurationName": {
+                    "Fn::Sub": "${LaunchName}-lc-instance"
+                },
+                "InstanceType": {
+                    "Ref": "InstanceType"
+                },
+                "AssociatePublicIpAddress": false
+            },
+            "DependsOn": []
+        },
+        "WebServerScaleUpPolicy": {
+            "Type": "AWS::AutoScaling::ScalingPolicy",
+            "Properties": {
+                "AdjustmentType": "ChangeInCapacity",
+                "AutoScalingGroupName": {
+                    "Ref": "WebServerGroup"
+                },
+                "Cooldown": "60",
+                "ScalingAdjustment": 1
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "db0b179a-829c-4134-a765-7deeeac98e82"
+                }
+            }
+        },
+        "WebServerScaleDownPolicy": {
+            "Type": "AWS::AutoScaling::ScalingPolicy",
+            "Properties": {
+                "AdjustmentType": "ChangeInCapacity",
+                "AutoScalingGroupName": {
+                    "Ref": "WebServerGroup"
+                },
+                "Cooldown": "60",
+                "ScalingAdjustment": -1
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "cf0f3bb3-651b-4893-b99a-575f1c908ecf"
+                }
+            }
+        },
+        "CPUAlarmHigh": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Scale-up if CPU > 90% for 10 minutes",
+                "MetricName": "CPUUtilization",
+                "Namespace": "AWS/EC2",
+                "Statistic": "Average",
+                "Period": 300,
+                "EvaluationPeriods": 2,
+                "Threshold": 90,
+                "AlarmActions": [
+                    {
+                        "Ref": "WebServerScaleUpPolicy"
+                    }
+                ],
+                "Dimensions": [
+                    {
+                        "Name": "AutoScalingGroupName",
+                        "Value": {
+                            "Ref": "WebServerGroup"
+                        }
+                    }
+                ],
+                "ComparisonOperator": "GreaterThanThreshold"
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "3a5d1b4c-c842-4424-a3c7-37e096c39cf3"
+                }
+            }
+        },
+        "CPUAlarmLow": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+                "AlarmDescription": "Scale-down if CPU < 40% for 10 minutes",
+                "MetricName": "CPUUtilization",
+                "Namespace": "AWS/EC2",
+                "Statistic": "Average",
+                "Period": 300,
+                "EvaluationPeriods": 2,
+                "Threshold": 40,
+                "AlarmActions": [
+                    {
+                        "Ref": "WebServerScaleDownPolicy"
+                    }
+                ],
+                "Dimensions": [
+                    {
+                        "Name": "AutoScalingGroupName",
+                        "Value": {
+                            "Ref": "WebServerGroup"
+                        }
+                    }
+                ],
+                "ComparisonOperator": "LessThanThreshold"
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "11720938-6122-4a95-acaa-6cd5ff0580f4"
+                }
+            }
+        },
+        "ApplicationLoadBalancer": {
+            "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+            "Properties": {
+			"Name": {
+					"Fn::Sub": "${LaunchName}-CallVuLB"
+				},
+                "Scheme": "internal",
+                "SecurityGroups": [
+                    {
+                        "Ref": "LBSecurityGroup"
+                    }
+                ],
+                "Subnets": [
+                    {
+                        "Ref": "Subnet1"
+                    },
+                    {
+                        "Ref": "Subnet2"
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "6e0267a6-d681-4948-afc4-45d164f5936e"
+                }
+            }
+        },
+        "ALBListener": {
+            "Type": "AWS::ElasticLoadBalancingV2::Listener",
+            "Properties": {
+                "DefaultActions": [
+                    {
+                        "Type": "forward",
+                        "TargetGroupArn": {
+                            "Ref": "ALBTargetGroup"
+                        }
+                    }
+                ],
+                "LoadBalancerArn": {
+                    "Ref": "ApplicationLoadBalancer"
+                },
+                "Port": 80,
+                "Protocol": "HTTP"
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "d2578730-cafc-4f49-a523-fedbd2949fbe"
+                }
+            }
+        },
+        "ALBTargetGroup": {
+            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+            "Properties": {
+                "HealthCheckIntervalSeconds": 30,
+                "HealthCheckTimeoutSeconds": 5,
+                "HealthyThresholdCount": 3,
+                "Port": 80,
+                "Protocol": "HTTP",
+                "UnhealthyThresholdCount": 5,
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "a5090fbf-8040-48a3-8668-25470a9b45e1"
+                }
+            }
+        },
+        "LBSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupName": {
+                    "Fn::Sub": "${LaunchName} LB SG For ${AWS::StackName}"
+                },
+                "GroupDescription": "Define polices for LB",
+                "VpcId": {
+                    "Ref": "VPC"
+                },
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 80,
+                        "ToPort": 80,
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 443,
+                        "ToPort": 443,
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 3389,
+                        "ToPort": 3389,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ],
+                "SecurityGroupEgress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 80,
+                        "ToPort": 80,
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 3389,
+                        "ToPort": 3389,
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 443,
+                        "ToPort": 443,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Sub": "${AWS::StackName}LBSecurityGroup"
+                        }
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "3bbf1d98-57cb-418c-806b-d3bb57df0717"
+                }
+            }
+        },
+        "InstanceSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Enable SSH access and HTTP from the load balancer only",
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 3389,
+                        "ToPort": 3389,
+                        "CidrIp": "0.0.0.0/0"
+                    }, {
+						"IpProtocol": "tcp",
+						"FromPort": 80,
+						"ToPort": 80,
+						"SourceSecurityGroupId": {
+							"Fn::Select": [
+								0, {
+									"Fn::GetAtt": [
+										"ApplicationLoadBalancer",
+										"SecurityGroups"
+									]
+								}
+							]
+						}
+					}, {
+						"IpProtocol": "tcp",
+						"FromPort": 443,
+						"ToPort": 443,
+						"SourceSecurityGroupId": {
+							"Fn::Select": [
+								0, {
+									"Fn::GetAtt": [
+										"ApplicationLoadBalancer",
+										"SecurityGroups"
+									]
+								}
+							]
+						}
+					}
+                ],
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "943e7f1a-33b9-48d7-a936-d7350723f469"
+                }
+            }
+        },
+        "PublicALBHTTPSListener": {
+            "Condition": "CreateHTTPSListenerWithCertificateCondition",
+            "Type": "AWS::ElasticLoadBalancingV2::Listener",
+            "Properties": {
+                "DefaultActions": [
+                    {
+                        "Type": "forward",
+                        "TargetGroupArn": {
+                            "Ref": "ALBTargetGroup"
+                        }
+                    }
+                ],
+                "LoadBalancerArn": {
+                    "Ref": "ApplicationLoadBalancer"
+                },
+                "Port": 443,
+                "Protocol": "HTTPS",
+                "Certificates": [
+                    {
+                        "CertificateArn": {
+                            "Ref": "HttpsCertificate"
+                        }
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "83e2790a-f58c-4790-8f55-0034738d94ac"
+                }
+            },
+            "DependsOn": []
+        }
+    },
+    "Outputs": {
+        "LoadBalancerDNSName": {
+            "Description": "Load Balancer DNS name.",
+            "Value": {
+                "Fn::GetAtt": [
+                    "ApplicationLoadBalancer",
+                    "DNSName"
+                ]
+            },
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "${AWS::StackName}-LBDNSName"
+                }
+            }
+        },
+		"LoadBalancerSecurityGroup": {
+            "Description": "Load Balancer security group.",
+            "Value": {
+                        "Ref": "LBSecurityGroup"
+                    },
+            "Export": {
+                "Name": {
+                    "Fn::Sub": "${AWS::StackName}-LBSecurityGroup"
+                }
+            }
+        }
+    }
+}

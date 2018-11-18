@@ -1,0 +1,1418 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This template creates CallVu connect environment",
+    "Parameters": {
+        "QSS3BucketName": {
+            "AllowedPattern": "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$",
+            "ConstraintDescription": "Quick Start bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).",
+            "Default": "qs-bucket-callvu",
+            "Description": "S3 bucket name for the Quick Start assets. Quick Start bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).",
+            "Type": "String"
+        },
+        "QSS3KeyPrefix": {
+            "AllowedPattern": "^[0-9a-zA-Z-/]*$",
+            "ConstraintDescription": "Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/).",
+            "Default": "callvu-connect",
+            "Description": "S3 key prefix for the Quick Start assets. Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/).",
+            "Type": "String"
+        },
+        "VPCCIDR": {
+            "AllowedPattern": "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$",
+            "ConstraintDescription": "CIDR block parameter must be in the form x.x.x.x/16-28",
+            "Default": "10.0.0.0/16",
+            "Description": "CIDR Block for the VPC",
+            "Type": "String"
+        },
+        "PrivateSubnet1CIDR": {
+            "AllowedPattern": "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$",
+            "ConstraintDescription": "CIDR block parameter must be in the form x.x.x.x/16-28",
+            "Default": "10.0.2.0/24",
+            "Description": "CIDR block for private subnet 1 located in Availability Zone 1.",
+            "Type": "String"
+        },
+        "PrivateSubnet2CIDR": {
+            "AllowedPattern": "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$",
+            "ConstraintDescription": "CIDR block parameter must be in the form x.x.x.x/16-28",
+            "Default": "10.0.3.0/24",
+            "Description": "CIDR block for private subnet 2 located in Availability Zone 2.",
+            "Type": "String"
+        },
+        "PublicSubnet1CIDR": {
+            "AllowedPattern": "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$",
+            "ConstraintDescription": "CIDR block parameter must be in the form x.x.x.x/16-28",
+            "Default": "10.0.0.0/24",
+            "Description": "CIDR Block for the public DMZ subnet 1 located in Availability Zone 1",
+            "Type": "String"
+        },
+        "PublicSubnet2CIDR": {
+            "AllowedPattern": "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$",
+            "ConstraintDescription": "CIDR block parameter must be in the form x.x.x.x/16-28",
+            "Default": "10.0.1.0/24",
+            "Description": "CIDR Block for the public DMZ subnet 2 located in Availability Zone 2",
+            "Type": "String"
+        },
+        "PublicHttpsCertificate": {
+            "Description": "Please enter certificate ARN for HTTPS connection",
+            "Type": "String",
+            "Default": ""
+        },
+        "CloudTrailLogsRetentionInDays": {
+            "Description": "The number of days log events are kept in CloudTrail Logs",
+            "Type": "Number",
+            "Default": 14,
+            "AllowedValues": [
+                1,
+                3,
+                5,
+                7,
+                14,
+                30,
+                60,
+                90,
+                120,
+                150,
+                180,
+                365,
+                400,
+                545,
+                731,
+                1827,
+                3653
+            ]
+        },
+        "ExternalTrailBucket": {
+            "Description": "Optional The name of the Amazon S3 bucket where CloudTrail publishes log files. If you leave this empty, the Amazon S3 bucket is created for you.",
+            "Type": "String",
+            "Default": ""
+        },
+        "LogFilePrefix": {
+            "Description": "Optional The log file prefix.",
+            "Type": "String",
+            "Default": ""
+        },
+        "DBUsername": {
+            "Description": "The database admin account user name (default is \"sa\")",
+            "Type": "String",
+            "Default": "sa"
+        },
+        "DBPassword": {
+            "Default": "password",
+            "NoEcho": "true",
+            "Description": "The database admin account password (default is \"password\")",
+            "Type": "String",
+            "MinLength": "8",
+            "MaxLength": "41",
+            "AllowedPattern": "[a-zA-Z0-9]*",
+            "ConstraintDescription": "must contain only alphanumeric characters."
+        },
+		 "PrivateInstancePassword": {
+            "Default": "P@ssword",
+            "NoEcho": "true",
+            "Description": "The public servers administrator account password (default is \"P@ssword\") Information about the complexity requirements can be found here: https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/password-must-meet-complexity-requirements ",
+            "Type": "String",
+            "MinLength": "8",
+            "MaxLength": "41"
+        },
+		 "PublicInstancePassword": {
+            "Default": "P@ssword",
+            "NoEcho": "true",
+            "Description": "The public servers administrator account password (default is \"P@ssword\") Information about the complexity requirements can be found here: https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/password-must-meet-complexity-requirements ",
+            "Type": "String",
+            "MinLength": "8",
+            "MaxLength": "41"
+        },
+        "DBClass": {
+            "Default": "db.r4.large",
+            "Description": "Database instance class",
+            "Type": "String",
+            "AllowedValues": [
+                "db.r4.large",
+                "db.m4.large",
+                "db.m4.xlarge",
+                "db.m4.2xlarge",
+                "db.r4.xlarge",
+                "db.r4.16xlarge"
+            ],
+            "ConstraintDescription": "must select a valid database instance type."
+        },
+        "ExternalUrl": {
+            "Description": "Please enter DNS name of SSL certificate that maps to the external load balancer (Example: http://digitalivr.yourdomain.com )",
+            "Type": "String",
+            "Default": "http://digitalivr.yourdomain.com"
+        },
+        "KeyName": {
+            "Description": "The EC2 Key Pair to allow SSH access to the instances",
+            "Type": "AWS::EC2::KeyPair::KeyName",
+            "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+        },
+        "OperatorEMail": {
+            "Description": "Email address to notify if there are any scaling operations",
+            "Type": "String",
+            "AllowedPattern": "([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\\]?)",
+            "ConstraintDescription": "Must be a valid email address."
+        },
+        "CloudTrailOperatorEMail": {
+            "Description": "Email address to notify about CloudTrail logs.Be carefull this mail will receive all events.",
+            "Type": "String",
+            "AllowedPattern": "([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\\]?)",
+            "ConstraintDescription": "Must be a valid email address."
+        },
+        "PrivateInstanceType": {
+            "Description": "Private WebServer EC2 instance type",
+            "Type": "String",
+            "Default": "t3.xlarge",
+            "AllowedValues": [
+                "t3.xlarge",
+                "t2.nano",
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "t2.large",
+                "m1.small",
+                "m1.medium",
+                "m1.large",
+                "m1.xlarge",
+                "m2.xlarge",
+                "m2.2xlarge",
+                "m2.4xlarge",
+                "m3.medium",
+                "m3.large",
+                "m3.xlarge",
+                "m3.2xlarge",
+                "m4.large",
+                "m4.xlarge",
+                "m4.2xlarge",
+                "m4.4xlarge",
+                "m4.10xlarge",
+                "c1.medium",
+                "c1.xlarge",
+                "c3.large",
+                "c3.xlarge",
+                "c3.2xlarge",
+                "c3.4xlarge",
+                "c3.8xlarge",
+                "c4.large",
+                "c4.xlarge",
+                "c4.2xlarge",
+                "c4.4xlarge",
+                "c4.8xlarge",
+                "g2.2xlarge",
+                "g2.8xlarge",
+                "r3.large",
+                "r3.xlarge",
+                "r3.2xlarge",
+                "r3.4xlarge",
+                "r3.8xlarge",
+                "i2.xlarge",
+                "i2.2xlarge",
+                "i2.4xlarge",
+                "i2.8xlarge",
+                "d2.xlarge",
+                "d2.2xlarge",
+                "d2.4xlarge",
+                "d2.8xlarge",
+                "hi1.4xlarge",
+                "hs1.8xlarge",
+                "cr1.8xlarge",
+                "cc2.8xlarge",
+                "cg1.4xlarge"
+            ],
+            "ConstraintDescription": "must be a valid EC2 instance type."
+        },
+        "PublicInstanceType": {
+            "Description": "Public WebServer EC2 instance type",
+            "Type": "String",
+            "Default": "t3.xlarge",
+            "AllowedValues": [
+                "t3.xlarge",
+                "t2.nano",
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "t2.large",
+                "m1.small",
+                "m1.medium",
+                "m1.large",
+                "m1.xlarge",
+                "m2.xlarge",
+                "m2.2xlarge",
+                "m2.4xlarge",
+                "m3.medium",
+                "m3.large",
+                "m3.xlarge",
+                "m3.2xlarge",
+                "m4.large",
+                "m4.xlarge",
+                "m4.2xlarge",
+                "m4.4xlarge",
+                "m4.10xlarge",
+                "c1.medium",
+                "c1.xlarge",
+                "c3.large",
+                "c3.xlarge",
+                "c3.2xlarge",
+                "c3.4xlarge",
+                "c3.8xlarge",
+                "c4.large",
+                "c4.xlarge",
+                "c4.2xlarge",
+                "c4.4xlarge",
+                "c4.8xlarge",
+                "g2.2xlarge",
+                "g2.8xlarge",
+                "r3.large",
+                "r3.xlarge",
+                "r3.2xlarge",
+                "r3.4xlarge",
+                "r3.8xlarge",
+                "i2.xlarge",
+                "i2.2xlarge",
+                "i2.4xlarge",
+                "i2.8xlarge",
+                "d2.xlarge",
+                "d2.2xlarge",
+                "d2.4xlarge",
+                "d2.8xlarge",
+                "hi1.4xlarge",
+                "hs1.8xlarge",
+                "cr1.8xlarge",
+                "cc2.8xlarge",
+                "cg1.4xlarge"
+            ],
+            "ConstraintDescription": "must be a valid EC2 instance type."
+        }
+    },
+    "Mappings": {
+        "DBSnapshots": {
+            "us-east-2": {
+                "Snapshot": "arn:aws:rds:us-east-2:683360774700:snapshot:callvusqldbsnapshot"
+            },
+            "us-east-1": {
+                "Snapshot": "arn:aws:rds:us-east-1:683360774700:snapshot:callvusqldbsnapshot"
+            },
+            "us-west-2": {
+                "Snapshot": "arn:aws:rds:us-west-2:683360774700:snapshot:callvusqldbsnapshot"
+            },
+            "eu-central-1": {
+                "Snapshot": "arn:aws:rds:eu-central-1:683360774700:snapshot:callvusqldbsnapshot"
+            },
+            "ap-southeast-2": {
+                "Snapshot": "arn:aws:rds:ap-southeast-2:683360774700:snapshot:callvusqldbsnapshot"
+            }
+        },
+        "AMIPrivateWebServer": {
+            "us-east-2": {
+                "AMI": "ami-0c1e8ee017b750566"
+            },
+            "us-east-1": {
+                "AMI": "ami-0ce2816de780eff94"
+            },
+            "us-west-2": {
+                "AMI": "ami-0e5b34f2023112fb4"
+            },
+            "eu-central-1": {
+                "AMI": "ami-085d3674060509530"
+            },
+            "ap-southeast-2": {
+                "AMI": "ami-03c3da7469a76bfb8"
+            }
+        },
+        "AMIPublicWebServer": {
+            "us-east-2": {
+                "AMI": "ami-006677a237d936a22"
+            },
+            "us-east-1": {
+                "AMI": "ami-0d63bba406e0741db"
+            },
+            "us-west-2": {
+                "AMI": "ami-073cbd816181babaf"
+            },
+            "eu-central-1": {
+                "AMI": "ami-0cbe4cbba9cd88cd6"
+            },
+            "ap-southeast-2": {
+                "AMI": "ami-0b71538de8bb6c0ee"
+            }
+        }
+    },
+    "Metadata": {
+        "AWS::CloudFormation::Interface": {
+            "ParameterGroups": [
+                {
+                    "Label": {
+                        "default": "Network Configuration"
+                    },
+                    "Parameters": [
+                        "VPCCIDR",
+                        "PublicSubnet1CIDR",
+                        "PublicSubnet2CIDR",
+                        "PrivateSubnet1CIDR",
+                        "PrivateSubnet2CIDR"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "HTTPS Configuration"
+                    },
+                    "Parameters": [
+                        "PublicHttpsCertificate",
+                        "ExternalUrl"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "DB Configuration"
+                    },
+                    "Parameters": [
+                        "DBClass",
+                        "DBUsername",
+                        "DBPassword"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "CloudTrail Configuration"
+                    },
+                    "Parameters": [
+                        "CloudTrailLogsRetentionInDays",
+                        "ExternalTrailBucket",
+                        "LogFilePrefix",
+                        "CloudTrailOperatorEMail"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "Instances Configuration"
+                    },
+                    "Parameters": [
+                        "KeyName",
+                        "PrivateInstanceType",
+                        "PublicInstanceType",
+                        "PrivateInstancePassword",
+                        "PublicInstancePassword"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "Global Configuration"
+                    },
+                    "Parameters": [
+                        "OperatorEMail"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "AWS Quick Start Configuration"
+                    },
+                    "Parameters": [
+                        "QSS3BucketName",
+                        "QSS3KeyPrefix"
+                    ]
+                }
+            ],
+            "ParameterLabels": {
+                "PrivateSubnet1CIDR": {
+                    "default": "PrivateSubnet1CIDR"
+                },
+                "PrivateSubnet2CIDR": {
+                    "default": "PrivateSubnet2CIDR"
+                },
+                "PublicSubnet1CIDR": {
+                    "default": "PublicSubnet1CIDR"
+                },
+                "PublicSubnet2CIDR": {
+                    "default": "PublicSubnet2CIDR"
+                },
+                "QSS3BucketName": {
+                    "default": "Quick Start S3 Bucket Name"
+                },
+				 "OperatorEMail": {
+                    "default": "Operator email"
+                },
+                "QSS3KeyPrefix": {
+                    "default": "Quick Start S3 Key Prefix"
+                }
+            }
+        },
+        "AWS::CloudFormation::Designer": {
+            "b807c8eb-e1ce-4742-b896-f11ec552cb44": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 820,
+                    "y": 50
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "1f55ed28-cadc-47c7-88a2-889ccb27c389": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 1350,
+                    "y": 170
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "bd2d291e-8e82-47ab-be99-68e695090ca4": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 1350,
+                    "y": 260
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "23fc7f82-fee7-40e4-826c-cff20dc05fa7": {
+                "size": {
+                    "width": 140,
+                    "height": 170
+                },
+                "position": {
+                    "x": 930,
+                    "y": 200
+                },
+                "z": 0,
+                "embeds": [
+                    "25bb07c8-69c6-4f6d-a45b-a9ed4031ff19"
+                ]
+            },
+            "d31cf01b-4533-4507-84e0-3aee4561829b": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 630,
+                    "y": 400
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "6b7f11d0-723a-4bbe-b5fc-caea00bacfcd": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 820,
+                    "y": 410
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "25bb07c8-69c6-4f6d-a45b-a9ed4031ff19": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 970,
+                    "y": 250
+                },
+                "z": 1,
+                "parent": "23fc7f82-fee7-40e4-826c-cff20dc05fa7",
+                "embeds": [],
+                "isassociatedwith": [
+                    "6b7f11d0-723a-4bbe-b5fc-caea00bacfcd"
+                ],
+                "iscontainedinside": [
+                    "23fc7f82-fee7-40e4-826c-cff20dc05fa7",
+                    "23fc7f82-fee7-40e4-826c-cff20dc05fa7",
+                    "23fc7f82-fee7-40e4-826c-cff20dc05fa7",
+                    "23fc7f82-fee7-40e4-826c-cff20dc05fa7",
+                    "23fc7f82-fee7-40e4-826c-cff20dc05fa7",
+                    "23fc7f82-fee7-40e4-826c-cff20dc05fa7",
+                    "23fc7f82-fee7-40e4-826c-cff20dc05fa7",
+                    "23fc7f82-fee7-40e4-826c-cff20dc05fa7"
+                ],
+                "dependson": [
+                    "23fc7f82-fee7-40e4-826c-cff20dc05fa7"
+                ]
+            },
+            "ea0962e0-6aae-4d15-a055-42018d4ac170": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 630,
+                    "y": 50
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "e5912fed-f567-443f-9567-fc76161ce922": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 1180,
+                    "y": 230
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "0c7ea522-9cb2-4e90-b714-2ba50c057982": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 460,
+                    "y": 250
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "89562f53-89ab-45ea-a37e-c2e16ea0afae": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 1520,
+                    "y": 170
+                },
+                "z": 0,
+                "embeds": []
+            },
+            "2642a675-b2e0-4d13-a50f-24bb252aa01b": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 1520,
+                    "y": 260
+                },
+                "z": 0,
+                "embeds": [],
+                "isassociatedwith": [
+                    "89562f53-89ab-45ea-a37e-c2e16ea0afae"
+                ]
+            },
+            "63c7b7c7-bbd0-459a-9eb2-80156ac79559": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 1520,
+                    "y": 80
+                },
+                "z": 0,
+                "embeds": []
+            }
+        }
+    },
+    "Resources": {
+        "VPCStack": {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": {
+                    "Fn::Sub": [
+                        "https://${QSS3Region}.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}/submodules/aws-vpc.template",
+                        {
+                            "QSS3Region": "s3"
+                        }
+                    ]
+                },
+                "Parameters": {
+                    "AvailabilityZones": {
+                        "Fn::Join": [
+                            ",",
+                            {
+                                "Fn::GetAZs": ""
+                            }
+                        ]
+                    },
+                    "KeyPairName": {
+                        "Ref": "KeyName"
+                    },
+                    "NumberOfAZs": "2",
+                    "PrivateSubnet1ACIDR": {
+                        "Ref": "PrivateSubnet1CIDR"
+                    },
+                    "PrivateSubnet2ACIDR": {
+                        "Ref": "PrivateSubnet2CIDR"
+                    },
+                    "PublicSubnet1CIDR": {
+                        "Ref": "PublicSubnet1CIDR"
+                    },
+                    "PublicSubnet2CIDR": {
+                        "Ref": "PublicSubnet2CIDR"
+                    },
+                    "VPCCIDR": {
+                        "Ref": "VPCCIDR"
+                    }
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "b807c8eb-e1ce-4742-b896-f11ec552cb44"
+                }
+            }
+        },
+        "SetDynamicDisplayFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::Sub": "CallVUHub${AWS::StackName}"
+                },
+                "Handler": "index.handler",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaExecutionRole",
+                        "Arn"
+                    ]
+                },
+                "Code": {
+                    "ZipFile": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "exports.handler=(event,context,callback)=>{var http=require('http');\n \n var SetDisplayPath;\n const request=require('https');\n if(!event.Details)return;\n console.log(event.Details.Parameters);\n var phoneNumber=event.Details.Parameters.number;\n if(phoneNumber&&phoneNumber.charAt(0)==='.')",
+                                "{phoneNumber=phoneNumber.substr(1);\n }",
+                                "if(event.Details.Parameters.method==null)",
+                                "{event.Details.Parameters.method='';\n }",
+                                "if(event.Details.Parameters.dnis==null)",
+                                "{event.Details.Parameters.dnis='';\n }",
+                                "if(event.Details.Parameters.folder==null)",
+                                "{event.Details.Parameters.folder='';\n }",
+                                "if(event.Details.Parameters.method==null)",
+                                "{event.Details.Parameters.method='SET';\n }",
+                                "if(event.Details.Parameters.method.includes('HealthCheck'))",
+                                "{SetDisplayPath='/IDS/HealthCheck';\n }",
+                                "else if(event.Details.Parameters.method.includes('RCV'))",
+                                "{SetDisplayPath='/IDS/SetDisplayRcv?PhoneNumber='+phoneNumber+'&Token='+event.Details.Parameters.token+'&timeout='+event.Details.Parameters.timeout;\n }",
+                                "else if(event.Details.Parameters.method.includes('UDR'))",
+                                "{SetDisplayPath='/IDS/GetNextFlowStep?PhoneNumber='+phoneNumber+'&Token='+event.Details.Parameters.token+'&dnis='+event.Details.Parameters.dnis+'&lastinput=';\n }",
+                                "else if(event.Details.Parameters.method.includes('ISWEBCLIENTSTARTED'))",
+                                "{SetDisplayPath='/IDS/IsWebClientStarted?PhoneNumber='+phoneNumber+'&Token='+event.Details.Parameters.token+'&timeout='+event.Details.Parameters.timeout;\n }",
+                                "else",
+                                "{if(event.Details.Parameters.file.includes('EndCall'))",
+                                "{SetDisplayPath='/IDS/SetDynamicDisplay?PhoneNumber='+phoneNumber+'&Token='+event.Details.Parameters.token+'&File=!EndCall&Folder=&DNIS=&IsAsynch=true&timeout=9999';\n }",
+                                "else",
+                                "{var setParams='';\n if(event.Details.Parameters.source){setParams=setParams+'&CallPhase='+event.Details.Parameters.source;\n }",
+                                "if(event.Details.Parameters.IsAsynch){setParams=setParams+'&IsAsynch='+event.Details.Parameters.IsAsynch;\n }",
+                                "if(event.Details.Parameters.timeout){setParams=setParams+'&timeout='+event.Details.Parameters.timeout;\n }",
+                                "SetDisplayPath='/IDS/SetDynamicDisplay?PhoneNumber='+phoneNumber+'&Token='+event.Details.Parameters.token+'&File='+event.Details.Parameters.file+'&Folder='+event.Details.Parameters.folder+'&DNIS='+event.Details.Parameters.dnis+setParams;\n }}",
+                                "var options = {\n",
+                                "host: '",
+                                {
+                                    "Fn::GetAtt": [
+                                        "PrivateScaleGroupStack",
+                                        "Outputs.LoadBalancerDNSName"
+                                    ]
+                                },
+                                "',\n",
+                                "port:80,path:SetDisplayPath,method:'GET'};\n console.log(options.host+options.path);\n var req=http.request(options,function(res){console.log('STATUS: '+res.statusCode);\n console.log('HEADERS: '+JSON.stringify(res.headers));\n res.setEncoding('utf8');\n var data='';\n res.on('data',function(chunk){data+=chunk;\n });\n res.on('end',function(){console.log('data: ',data);\n var ret='';\n var reg='';\n if(event.Details.Parameters.method.includes('HealthCheck'))",
+                                "{ret=data;\n }",
+                                "else",
+                                "{reg=data.substring(data.indexOf('>')+1,data.lastIndexOf('</'));\n console.log(reg);\n if(event.Details.Parameters.method.includes('RCV'))",
+                                "{if(reg=='*99*')",
+                                "{reg='CallVU_Hangup';\n }",
+                                "ret={input:reg};\n }",
+                                "else if(event.Details.Parameters.method.includes('ISWEBCLIENTSTARTED'))",
+                                "{ret={input:reg};\n }",
+                                "else if(event.Details.Parameters.method.includes('UDR')){if(reg.indexOf('/>')>0)",
+                                "reg='no_screen';\n if(reg.indexOf(';')>0)",
+                                "ret={screen:reg.split(';')[0],audio:reg.split(';')[1]};\n else \n",
+                                "ret={screen:reg};\n }",
+                                "else",
+                                "{ret={token:reg};\n }}",
+                                "console.log('Function returns:',ret);\n callback(null,ret);\n });\n }).end();\n console.log(req);\n };\n "
+                            ]
+                        ]
+                    }
+                },
+                "Runtime": "nodejs6.10",
+                "VpcConfig": {
+                    "SecurityGroupIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "PrivateScaleGroupStack",
+                                "Outputs.LoadBalancerSecurityGroup"
+                            ]
+                        }
+                    ],
+                    "SubnetIds": [
+                        {
+                            "Fn::GetAtt": [
+                                "VPCStack",
+                                "Outputs.PrivateSubnet1AID"
+                            ]
+                        },
+                        {
+                            "Fn::GetAtt": [
+                                "VPCStack",
+                                "Outputs.PrivateSubnet2AID"
+                            ]
+                        }
+                    ]
+                },
+                "Timeout": 300
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "1f55ed28-cadc-47c7-88a2-889ccb27c389"
+                }
+            }
+        },
+        "LambdaExecutionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/",
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaRole"
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "EC2Policy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "lambda:InvokeFunction"
+                                    ],
+                                    "Resource": [
+                                        "*"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "bd2d291e-8e82-47ab-be99-68e695090ca4"
+                }
+            }
+        },
+        "PrivateDBSubnetGroup": {
+            "Type": "AWS::RDS::DBSubnetGroup",
+            "Properties": {
+                "DBSubnetGroupDescription": {
+                    "Fn::Sub": "Subnets created automatically for ${AWS::StackName}"
+                },
+                "DBSubnetGroupName": {
+                    "Fn::Sub": "callvudbsubnet${AWS::StackName}"
+                },
+                "SubnetIds": [
+                    {
+                        "Fn::GetAtt": [
+                            "VPCStack",
+                            "Outputs.PrivateSubnet1AID"
+                        ]
+                    },
+                    {
+                        "Fn::GetAtt": [
+                            "VPCStack",
+                            "Outputs.PrivateSubnet2AID"
+                        ]
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "23fc7f82-fee7-40e4-826c-cff20dc05fa7"
+                }
+            }
+        },
+        "NotificationTopic": {
+            "Type": "AWS::SNS::Topic",
+            "Properties": {
+                "Subscription": [
+                    {
+                        "Endpoint": {
+                            "Ref": "OperatorEMail"
+                        },
+                        "Protocol": "email"
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "d31cf01b-4533-4507-84e0-3aee4561829b"
+                }
+            }
+        },
+        "RDSSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupName": {
+                    "Fn::Sub": "RDS SG For ${AWS::StackName}"
+                },
+                "GroupDescription": "Define RDS polices for DB",
+                "VpcId": {
+                    "Fn::GetAtt": [
+                        "VPCStack",
+                        "Outputs.VPCID"
+                    ]
+                },
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 3389,
+                        "ToPort": 3389,
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 1433,
+                        "ToPort": 1433,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ],
+                "SecurityGroupEgress": [],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "RDSSecurityGroup"
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "6b7f11d0-723a-4bbe-b5fc-caea00bacfcd"
+                }
+            }
+        },
+        "SqlDB": {
+            "Type": "AWS::RDS::DBInstance",
+            "Properties": {
+                "DBSnapshotIdentifier": {
+                    "Fn::FindInMap": [
+                        "DBSnapshots",
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        "Snapshot"
+                    ]
+                },
+                "AllocatedStorage": "20",
+                "DBInstanceIdentifier": {
+                    "Fn::Sub": "callvudb${AWS::StackName}"
+                },
+                "DBInstanceClass": {
+                    "Ref": "DBClass"
+                },
+                "MultiAZ": true,
+                "LicenseModel": "license-included",
+                "Engine": "sqlserver-se",
+                "EngineVersion": "14.00.3035.2.v1",
+                "MasterUsername": {
+                    "Ref": "DBUsername"
+                },
+                "MasterUserPassword": {
+                    "Ref": "DBPassword"
+                },
+                "DBSubnetGroupName": {
+                    "Ref": "PrivateDBSubnetGroup"
+                },
+                "VPCSecurityGroups": [
+                    {
+                        "Ref": "RDSSecurityGroup"
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Sub": "callvudb${AWS::StackName}"
+                        }
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "25bb07c8-69c6-4f6d-a45b-a9ed4031ff19"
+                }
+            }
+        },
+        "PrivateScaleGroupStack": {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": {
+                    "Fn::Sub": [
+                        "https://${QSS3Region}.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}/templates/private-auto-scale.template",
+                        {
+                            "QSS3Region": "s3"
+                        }
+                    ]
+                },
+                "Parameters": {
+                    "KeyPairName": {
+                        "Ref": "KeyName"
+                    },
+                    "Subnet1": {
+                        "Fn::GetAtt": [
+                            "VPCStack",
+                            "Outputs.PrivateSubnet1AID"
+                        ]
+                    },
+                    "Subnet2": {
+                        "Fn::GetAtt": [
+                            "VPCStack",
+                            "Outputs.PrivateSubnet2AID"
+                        ]
+                    },
+                    "VPC": {
+                        "Fn::GetAtt": [
+                            "VPCStack",
+                            "Outputs.VPCID"
+                        ]
+                    },
+                    "UserDataString": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "<script>\n",
+									"powershell -Command \"(gc C:\\conf.bat) -replace 'DB_END_POINT_FORMATION', '",
+                                    {
+                                        "Fn::GetAtt": [
+                                            "SqlDB",
+                                            "Endpoint.Address"
+                                        ]
+                                    },
+                                    "' | Out-File C:\\conf.bat -encoding utf8\"\n",
+									"powershell -Command \"(gc C:\\conf.bat) -replace 'DB_USER_FORMATION', '",
+                                    {
+                                        "Ref": "DBUsername"
+                                    },
+                                    "' | Out-File C:\\conf.bat -encoding utf8\"\n",
+									"powershell -Command \"(gc C:\\conf.bat) -replace 'DB_PASS_FORMATION', '",
+                                    {
+                                        "Ref": "DBPassword"
+                                    },
+                                    "' | Out-File C:\\conf.bat -encoding utf8\"\n",
+									"powershell -Command \"(gc C:\\conf.bat) -replace 'EXTERNAL_URL_FORMATION', '",
+                                    {
+                                        "Ref": "ExternalUrl"
+                                    },
+                                    "' | Out-File C:\\conf.bat -encoding utf8\"\n",
+									"powershell -Command \"(gc C:\\conf.bat) -replace 'ACCESS_KEY_TO_REPLACE_FORMATION', '",
+                                    {
+                                        "Ref": "SendSMSKey"
+                                    },
+                                    "' | Out-File C:\\conf.bat -encoding utf8\"\n",
+									"powershell -Command \"(gc C:\\conf.bat) -replace 'SECRET_KEY_TO_REPLACE_FORMATION', '",
+                                    {
+                                        "Fn::GetAtt": [
+                                            "SendSMSKey",
+                                            "SecretAccessKey"
+                                        ]
+                                    },
+                                    "' | Out-File C:\\conf.bat -encoding utf8\"\n",
+									"powershell -Command \"(gc C:\\conf.bat) -replace 'PASSWORD_FORMATION', '",
+									{
+                                        "Ref": "PrivateInstancePassword"
+                                    },
+									"' | Out-File C:\\conf.bat -encoding utf8\"\n",
+									"start C:\\conf.bat\n",
+									"\n",
+                                    "</script>"
+                                ]
+                            ]
+                    },
+                    "ImageIdString": {
+                        "Fn::FindInMap": [
+                            "AMIPrivateWebServer",
+                            {
+                                "Ref": "AWS::Region"
+                            },
+                            "AMI"
+                        ]
+                    },
+                    "LaunchName": "private",
+                    "IsInternalLB": "true",
+                    "HttpsCertificate": "",
+                    "NotificationTopic": {
+                        "Ref": "NotificationTopic"
+                    },
+                    "InstanceType": {
+                        "Ref": "PrivateInstanceType"
+                    }
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "ea0962e0-6aae-4d15-a055-42018d4ac170"
+                }
+            }
+        },
+        "CloudTrailStack": {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": {
+                    "Fn::Sub": [
+                        "https://${QSS3Region}.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}/templates/cloud-trail.template",
+                        {
+                            "QSS3Region": "s3"
+                        }
+                    ]
+                },
+                "Parameters": {
+                    "CloudWatchLogsRetentionInDays": {
+                        "Ref": "CloudTrailLogsRetentionInDays"
+                    },
+                    "ExternalTrailBucket": {
+                        "Ref": "ExternalTrailBucket"
+                    },
+                    "OperatorEMail": {
+                        "Ref": "CloudTrailOperatorEMail"
+                    },
+                    "LogFilePrefix": {
+                        "Ref": "LogFilePrefix"
+                    }
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "e5912fed-f567-443f-9567-fc76161ce922"
+                }
+            }
+        },
+        "PublicScaleGroupStack": {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": {
+                    "Fn::Sub": [
+                        "https://${QSS3Region}.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}/templates/public-auto-scale.template",
+                        {
+                            "QSS3Region": "s3"
+                        }
+                    ]
+                },
+                "Parameters": {
+                    "KeyPairName": {
+                        "Ref": "KeyName"
+                    },
+                    "Subnet1": {
+                        "Fn::GetAtt": [
+                            "VPCStack",
+                            "Outputs.PublicSubnet1ID"
+                        ]
+                    },
+                    "Subnet2": {
+                        "Fn::GetAtt": [
+                            "VPCStack",
+                            "Outputs.PublicSubnet2ID"
+                        ]
+                    },
+                    "VPC": {
+                        "Fn::GetAtt": [
+                            "VPCStack",
+                            "Outputs.VPCID"
+                        ]
+                    },
+                    "UserDataStringPart1": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "<script>\n",
+								
+								
+								"powershell -Command \"(gc C:\\conf.bat) -replace 'DB_END_POINT_FORMATION', '",
+                                    {
+                                        "Fn::GetAtt": [
+                                            "SqlDB",
+                                            "Endpoint.Address"
+                                        ]
+                                    },
+                                    "' | Out-File C:\\conf.bat -encoding utf8\"\n",
+									"powershell -Command \"(gc C:\\conf.bat) -replace 'DB_USER_FORMATION', '",
+                                    {
+                                        "Ref": "DBUsername"
+                                    },
+                                    "' | Out-File C:\\conf.bat -encoding utf8\"\n",
+									"powershell -Command \"(gc C:\\conf.bat) -replace 'DB_PASS_FORMATION', '",
+                                    {
+                                        "Ref": "DBPassword"
+                                    },
+                                    "' | Out-File C:\\conf.bat -encoding utf8\"\n",
+									"powershell -Command \"(gc C:\\conf.bat) -replace 'EXTERNAL_URL_FORMATION', '",
+                                    {
+                                        "Ref": "ExternalUrl"
+                                    },
+                                    "' | Out-File C:\\conf.bat -encoding utf8\"\n",
+								"powershell -Command \"(gc C:\\conf.bat) -replace 'PUBLIC_LOAD_BALANCER_FORMATION', '"
+                            ]
+                        ]
+                    },
+                    "UserDataStringPart2": {
+                        "Fn::Join": [
+                            "",
+                            [
+							
+							
+							 "'| Out-File C:\\conf.bat -encoding utf8\"\n",
+								"powershell -Command \"(gc C:\\conf.bat) -replace 'PRIVATE_LOAD_BALANCER_FORMATION', '",
+								{
+                                    "Fn::GetAtt": [
+                                        "PrivateScaleGroupStack",
+                                        "Outputs.LoadBalancerDNSName"
+                                    ]
+                                },
+									"' | Out-File C:\\conf.bat -encoding utf8\"\n",
+								"powershell -Command \"(gc C:\\conf.bat) -replace 'PASSWORD_FORMATION', '",
+									{
+                                        "Ref": "PublicInstancePassword"
+                                    },
+									"' | Out-File C:\\conf.bat -encoding utf8\"\n",
+								"start C:\\conf.bat\n",
+                                "\n",
+                                "</script>"
+                            ]
+                        ]
+                    },
+                    "ImageIdString": {
+                        "Fn::FindInMap": [
+                            "AMIPublicWebServer",
+                            {
+                                "Ref": "AWS::Region"
+                            },
+                            "AMI"
+                        ]
+                    },
+                    "LaunchName": "public",
+                    "IsInternalLB": "false",
+                    "HttpsCertificate": {
+                        "Ref": "PublicHttpsCertificate"
+                    },
+                    "NotificationTopic": {
+                        "Ref": "NotificationTopic"
+                    },
+                    "InstanceType": {
+                        "Ref": "PublicInstanceType"
+                    }
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "0c7ea522-9cb2-4e90-b714-2ba50c057982"
+                }
+            }
+        },
+        "SendSMSUser": {
+            "Type": "AWS::IAM::User",
+            "Properties": {
+                "UserName": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "send_sms_",
+                            {
+                                "Ref": "AWS::Region"
+                            }
+                        ]
+                    ]
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "89562f53-89ab-45ea-a37e-c2e16ea0afae"
+                }
+            }
+        },
+        "SendSMSOnly": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "SendSMSOnly_",
+                            {
+                                "Ref": "AWS::Region"
+                            }
+                        ]
+                    ]
+                },
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Deny",
+                            "Action": [
+                                "sns:Publish"
+                            ],
+                            "Resource": "arn:aws:sns:*:*:*"
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "sns:Publish"
+                            ],
+                            "Resource": "*"
+                        }
+                    ]
+                },
+                "Users": [
+                    {
+                        "Ref": "SendSMSUser"
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "2642a675-b2e0-4d13-a50f-24bb252aa01b"
+                }
+            }
+        },
+        "SendSMSKey": {
+            "Type": "AWS::IAM::AccessKey",
+            "Properties": {
+                "UserName": {
+                    "Ref": "SendSMSUser"
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "63c7b7c7-bbd0-459a-9eb2-80156ac79559"
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "URL": {
+            "Description": "The URL of the external web server.",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        "https://",
+                        {
+                            "Fn::GetAtt": [
+                                "PublicScaleGroupStack",
+                                "Outputs.LoadBalancerDNSName"
+                            ]
+                        }
+                    ]
+                ]
+            }
+        },
+		"ScreenBuilderURL": {
+            "Description": "The URL accesible only from public servers. Each public server has a link on the desktop",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        "http://",
+                        {
+                            "Fn::GetAtt": [
+                                "PrivateScaleGroupStack",
+                                "Outputs.LoadBalancerDNSName"
+                            ]
+                        },
+						"/cv-screen-builder"
+                    ]
+                ]
+            }
+        },
+        "SetDynamicDisplayLambdaArn": {
+            "Description": "The ARN for the Lambda to be used by connect",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        {
+                            "Fn::GetAtt": [
+                                "SetDynamicDisplayFunction",
+                                "Arn"
+                            ]
+                        }
+                    ]
+                ]
+            }
+        },
+        "ConnectionString": {
+            "Description": "Connection string to the database",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        "Data Source=",
+                        {
+                            "Fn::GetAtt": [
+                                "SqlDB",
+                                "Endpoint.Address"
+                            ]
+                        },
+                        ";Port=",
+                        {
+                            "Fn::GetAtt": [
+                                "SqlDB",
+                                "Endpoint.Port"
+                            ]
+                        },
+                        "; Initial Catalog=callvudb; User ID=",
+                        {
+                            "Ref": "DBUsername"
+                        },
+                        ";Password=",
+                        {
+                            "Ref": "DBPassword"
+                        }
+                    ]
+                ]
+            }
+        },
+        "SendSMSUserCredentials": {
+            "Description": "Send sms user credentials with keys",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        "UserName: ",
+                        {
+                            "Ref": "SendSMSUser"
+                        },
+                        " ,Access key ID= ",
+                        {
+                            "Ref": "SendSMSKey"
+                        },
+                        " ; Secret access key= ",
+                        {
+                            "Fn::GetAtt": [
+                                "SendSMSKey",
+                                "SecretAccessKey"
+                            ]
+                        }
+                    ]
+                ]
+            }
+        }
+    }
+}

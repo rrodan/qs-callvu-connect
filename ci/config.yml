@@ -1,0 +1,14 @@
+global:
+  owner: doron@callvu.com
+  qsname: callvu-connect
+  s3bucket: qs-bucket-callvu
+  regions:
+    - us-east-1
+  reporting: true
+tests:
+  taskcat-json:
+    parameter_input: callvu-input.json
+    regions:
+      - us-east-1
+    template_file: callvu-connect-master.template
+
